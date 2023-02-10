@@ -2,6 +2,8 @@ import requests
 import urllib3
 import json
 import sys
+import time
+import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -37,15 +39,8 @@ else:
 
 
 #Dump cloud account UUID
-cloud_accounts = s.get(turboURI+"/search", headers=headers, verify=False, params={"scopes": "Market", "types": "BusinessAccount", "environment_type" : "CLOUD"})
-
-with open('account_list.json', 'wb') as outf:
-    outf.write(cloud_accounts.content) 
-#print("Get call for cloud account list")
-#print("\n")
-#accounts = cloud_accounts.content.decode("utf8")
-#print(accounts)
-
+cloud_accounts_response = s.get(turboURI+"/search", headers=headers, verify=False, params={"scopes": "Market", "types": "BusinessAccount", "environment_type" : "CLOUD"})
+cloud_account_list = json.loads(cloud_accounts_response.text)
 
 # Get all scale actions associated with each account
 action_payload = {
@@ -54,15 +49,7 @@ action_payload = {
 "types":["Workload"],
 "environmentType":"CLOUD"
 }
-post_action_response = s.post(turboURI+"/supplychains/stats", headers=headers, data = json.dumps(action_payload), verify=False)
-
-with open('account_actions.json', 'wb') as outf:
-    outf.write(post_action_response.content)
-#print("Get all actions for each account")
-#print("\n")
-#actions = post_action_response.content.decode("utf8")
-#print(actions)
-
+#Get all the savings opportunity by accounts
 savings_payload = {
     "actionInput":
         {
@@ -70,13 +57,30 @@ savings_payload = {
         },
     "scopes":["Market"]
 }
-#Get all the savings opportunity by accounts
-savings_list = s.post(turboURI+"/actions/stats", headers=headers, data = json.dumps(savings_payload), verify=False)
+savings_list_response = s.post(turboURI+"/actions/stats", headers=headers, data = json.dumps(savings_payload), verify=False)
+savings_list = json.loads(savings_list_response.text)
 
-with open('account_savings.json', 'wb') as outf:
-    outf.write(savings_list.content)
-#print("Get savings opportunity for each account")
-#print("\n")
-#savings = savings_list.content.decode("utf8")
-#print(savings_list)
+date_outputoutput = datetime.datetime.now().strftime("%Y_%m_%d-%I%M%S_%p")
 
+#Use each account UUID to output display name, number of workloads, number of actions, and potential savings
+for accounts in cloud_account_list:
+    print("Processing account " + accounts["displayName"])
+    uuid = accounts["uuid"]
+    display_name = accounts["displayName"]
+    workloads = accounts["membersCount"]
+    for stats in savings_list[0]["stats"][0]["statistics"]:
+        #print(stats["filters"][0])
+        if stats["filters"][0]["value"] == uuid and stats["name"] == "numActions":
+            action_count = stats["value"]
+        elif stats["filters"][0]["value"] == uuid and stats["name"] == "costPrice" and stats["filters"][1]["value"] == "savings":
+            potential_savings = 730*stats["value"]
+
+    top_account_output = {
+        "uuid":uuid,
+        "account name:":display_name,
+        "workloads":str(workloads),
+        "action_count":str(action_count),
+        "savings":str(potential_savings)
+    }
+    with open('top-accounts-output' + date_outputoutput + '.json', 'a') as outf:
+        outf.write(json.dumps(top_account_output))
