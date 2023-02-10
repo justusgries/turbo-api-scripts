@@ -11,8 +11,10 @@ try:
     instance = str(sys.argv[1])
     turbouser = str(sys.argv[2])
     turbopassword = str(sys.argv[3])
+#    entity = str(sys.argv[4])
+#    searchTerm = str(sys.argv[5])
 except IndexError:
-    raise SystemExit("Usage: <instance> <turbouser> <turbopassword>)
+    raise SystemExit("Usage: <instance> <turbouser> <turbopassword> <entity> <searchTerm>")
 
 
 #define constants 
@@ -37,17 +39,12 @@ else:
 
 
 #Dump cloud account UUID
+print("Collecting all cloud accounts from API.")
 cloud_accounts_response = s.get(turboURI+"/search", headers=headers, verify=False, params={"scopes": "Market", "types": "BusinessAccount", "environment_type" : "CLOUD"})
 cloud_account_list = json.loads(cloud_accounts_response.text)
 
-# Get all scale actions associated with each account
-action_payload = {
-"uuid":["Market"],
-"groupBy":["businessUnit"],
-"types":["Workload"],
-"environmentType":"CLOUD"
-}
 #Get all the savings opportunity by accounts
+print("Collecting stats from all accounts")
 savings_payload = {
     "actionInput":
         {
@@ -59,6 +56,7 @@ savings_list_response = s.post(turboURI+"/actions/stats", headers=headers, data 
 savings_list = json.loads(savings_list_response.text)
 
 date_outputoutput = datetime.datetime.now().strftime("%Y_%m_%d-%I%M%S_%p")
+
 
 #Use each account UUID to output display name, number of workloads, number of actions, and potential savings
 for accounts in cloud_account_list:
