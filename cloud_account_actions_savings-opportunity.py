@@ -11,10 +11,9 @@ try:
     instance = str(sys.argv[1])
     turbouser = str(sys.argv[2])
     turbopassword = str(sys.argv[3])
-#    entity = str(sys.argv[4])
-#    searchTerm = str(sys.argv[5])
+
 except IndexError:
-    raise SystemExit("Usage: <instance> <turbouser> <turbopassword> <entity> <searchTerm>")
+    raise SystemExit("Usage: <instance> <turbouser> <turbopassword>")
 
 
 #define constants 
